@@ -1,0 +1,5 @@
+rm -rf ~/.docker/desktop-data
+rm -rf ~/.docker/pid
+rm -rf ~/.docker/tmp
+rm -rf ~/.docker/contexts
+rm -rf ~/.docker/layers
