@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kalic
+  labels:
+    app: kali
+spec:
+  hostNetwork: true
+  containers:
+  - name: kali-container
+    image: kalilinux/kali-rolling
+    imagePullPolicy: Always
+    stdin: true
+    tty: true
+    securityContext:
+      privileged: true
+    volumeMounts:
+    - mountPath: /mnt/storage
+      name: storage-volume
+    - mountPath: /fluct_io
+      name: host-storage
+    - mountPath: /opt/kali-init
+      name: kali-init
+    lifecycle:
+      postStart:
+        exec:
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+              echo ">>> kali postStart: starting apt install..."
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -y
+              apt-get install -y --no-install-recommends \
+                stress-ng coreutils util-linux procps findutils \
+                wget curl ca-certificates apt-transport-https gnupg \
+                iproute2 net-tools dnsutils traceroute \
+                vim nano less htop lsof strace busybox \
+                rsync git unzip bzip2 gzip file socat tcpdump
+              apt-get clean
+              rm -rf /var/lib/apt/lists/*
+              mkdir -p /opt/kali-init
+              touch /opt/kali-init/kalipackages.installed
+              echo ">>> kali postStart: install finished"
+    readinessProbe:
+      exec:
+        command:
+          - /bin/sh
+          - -c
+          - test -f /opt/kali-init/kalipackages.installed
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      failureThreshold: 12
+    resources:
+      requests:
+        ephemeral-storage: "1Gi"
+      limits:
+        ephemeral-storage: "5Gi"
+  volumes:
+  - name: storage-volume
+    emptyDir:
+      sizeLimit: 10Gi
+  - name: host-storage
+    emptyDir:
+      sizeLimit: 5Gi
+  - name: kali-init
+    emptyDir: {}

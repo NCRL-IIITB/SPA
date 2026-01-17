@@ -1,0 +1,232 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+data:
+  prometheus-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+data:
+  kubernetes-pods-cpu-memory.json: |
+    {
+      "id": null,
+      "title": "Kubernetes Pods - CPU, Memory, Disk (Final Corrected)",
+      "tags": ["kubernetes", "pods", "monitoring"],
+      "timezone": "browser",
+      "schemaVersion": 36,
+      "version": 3,
+      "refresh": "30s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU Usage (millicores)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"POD\", pod!=\"\"}[5m])) by (pod) * 1000",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "mcore",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 700 },
+                  { "color": "red", "value": 900 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+        },
+        {
+          "id": 2,
+          "title": "CPU Usage (% of Request)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "(sum(rate(container_cpu_usage_seconds_total{container!=\"POD\", pod!=\"\"}[5m])) by (pod)) / (sum(kube_pod_container_resource_requests{resource=\"cpu\", pod!=\"\"}) by (pod)) * 100",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 80 },
+                  { "color": "red", "value": 100 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+        },
+        {
+          "id": 3,
+          "title": "Memory Usage (Bytes)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{container!=\"POD\", pod!=\"\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 500000000 },
+                  { "color": "red", "value": 1000000000 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+        },
+        {
+          "id": 4,
+          "title": "Memory Usage (% of Limit)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "(sum(container_memory_working_set_bytes{container!=\"POD\", pod!=\"\"}) by (pod)) / (sum(kube_pod_container_resource_limits{resource=\"memory\", pod!=\"\"}) by (pod)) * 100",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 80 },
+                  { "color": "red", "value": 95 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+        },
+        {
+          "id": 5,
+          "title": "Memory Cache (Bytes)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(container_memory_cache{container!=\"POD\", pod!=\"\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 500000000 },
+                  { "color": "red", "value": 1000000000 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
+        },
+        {
+          "id": 6,
+          "title": "Pod Restarts",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_status_restarts_total{pod!=\"\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": 0 },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
+        },
+        {
+          "id": 7,
+          "title": "Disk Write Rate (Bytes/sec)",
+          "type": "graph",
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(container_fs_writes_bytes_total{container!=\"POD\", pod!=\"\"}[5m])) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 1048576 },
+                  { "color": "red", "value": 5242880 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }
+        }
+      ]
+    }
